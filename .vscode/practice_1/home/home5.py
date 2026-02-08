@@ -1,1 +1,0 @@
-print("KBTU" + " is the best")
