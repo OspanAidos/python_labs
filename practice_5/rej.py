@@ -63,6 +63,6 @@ print(result)
 
 #10
 import re
-text = "camelCaseString"
+text = "CamelCaseString"
 result = re.sub(r"(?<!^)(?=[A-Z])", "_", text).lower()
 print(result)
