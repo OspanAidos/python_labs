@@ -2,12 +2,12 @@ import psycopg2
 import connect
 
 def main_menu():
-    print("\n--- Practice 08: Functions & Procedures ---")
-    print("1. Search (Function)")
-    print("2. Upsert (Procedure)")
-    print("3. Pagination (Function)")
-    print("4. Delete (Procedure)")
-    print("5. Bulk Insert (New Procedure)")
+    print("\n--- Practice 08: PhoneBook PRO ---")
+    print("1. Search by Names (e.g. Aidos, Madi)")
+    print("2. Add/Update Contact (Upsert)")
+    print("3. Pagination (Limit & Offset)")
+    print("4. Delete Contact")
+    print("5. Bulk Insert (Add Multiple)")
     print("6. Exit")
 
 def run():
@@ -16,64 +16,51 @@ def run():
         choice = input("Select: ")
         
         if choice == '6':
-            print("Goodbye!")
             break
 
-        
         try:
             conn = connect.get_connection()
             cur = conn.cursor()
 
             if choice == '1':
-                p = input("Enter search pattern (name or phone): ")
-                cur.execute("SELECT * FROM get_contacts_by_pattern(%s)", (p,))
+                search_input = [s.strip() for s in input("Enter name(s): ").split(',')]
+                cur.execute("SELECT * FROM get_multiple_contacts(%s)", (search_input,))
                 rows = cur.fetchall()
                 if rows:
-                    for r in rows: print(f"ID: {r[0]} | Name: {r[1]} | Phone: {r[2]}")
+                    for r in rows: print(f"Name: {r[1]} | Phone: {r[2]}")
                 else:
-                    print("No contacts found.")
+                    print("No matches found.")
             
             elif choice == '2':
-                n = input("Name: ")
-                ph = input("Phone: ")
+                n, ph = input("Name: "), input("Phone: ")
                 cur.execute("CALL upsert_contact(%s, %s)", (n, ph))
                 conn.commit()
-                print("Contact added or updated successfully.")
+                print("Done.")
 
-            
             elif choice == '3':
-                l = int(input("Limit (how many): "))
-                o = int(input("Offset (skip): "))
+                l, o = int(input("Limit: ")), int(input("Offset: "))
                 cur.execute("SELECT * FROM get_contacts_paginated(%s, %s)", (l, o))
                 for r in cur.fetchall():
                     print(f"ID: {r[0]} | Name: {r[1]} | Phone: {r[2]}")
 
-            
             elif choice == '4':
                 t = input("Name or Phone to delete: ")
                 cur.execute("CALL delete_contact_proc(%s)", (t,))
                 conn.commit()
-                print("Deleted successfully (if existed).")
+                print("Deleted.")
 
-            
             elif choice == '5':
-                print("Enter names separated by comma (e.g. Aidos,Madi,Ivan):")
-                names = [n.strip() for n in input().split(',')]
-                print("Enter phones separated by comma (e.g. 707,701,705):")
-                phones = [p.strip() for p in input().split(',')]
-                
-                if len(names) != len(phones):
-                    print("Error: The number of names and phones must be the same!")
-                else:
+                names = [n.strip() for n in input("Names: ").split(',')]
+                phones = [p.strip() for p in input("Phones: ").split(',')]
+                if len(names) == len(phones):
                     cur.execute("CALL insert_bulk_contacts(%s, %s)", (names, phones))
                     conn.commit()
-                    print(f"Successfully processed {len(names)} contacts.")
-
-            else:
-                print("Invalid choice, try again.")
+                    print("Bulk insert done.")
+                else:
+                    print("Error: Count mismatch!")
 
         except Exception as e:
-            print(f"Database error: {e}")
+            print(f"Error: {e}")
         finally:
             if 'cur' in locals(): cur.close()
             if 'conn' in locals(): conn.close()
