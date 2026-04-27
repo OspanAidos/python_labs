@@ -9,13 +9,11 @@ def main():
     font = pygame.font.SysFont("Arial", 24)
     clock = pygame.time.Clock()
 
-    # Путь к папке с музыкой (убедись, что она создана!)
     player = MusicPlayer("music")
 
     while True:
-        screen.fill((30, 30, 30))  # Темный фон
+        screen.fill((30, 30, 30))  
         
-        # Текстовая информация
         status = "Playing" if player.is_playing else "Stopped"
         track_info = font.render(f"Track: {player.get_current_track_name()}", True, (255, 255, 255))
         status_info = font.render(f"Status: {status}", True, (0, 255, 0) if player.is_playing else (255, 0, 0))

@@ -5,8 +5,7 @@ class MusicPlayer:
     def __init__(self, music_folder):
         pygame.mixer.init()
         self.folder = music_folder
-        # Получаем список всех mp3 и wav файлов в папке
-        self.playlist = [f for f in os.listdir(music_folder) if f.endswith(('.mp3', '.wav'))]
+        self.playlist = [f for f in os.listdir(music_folder) if f.endswith(('.mp3'))]
         self.current_index = 0
         self.is_playing = False
 
@@ -14,7 +13,6 @@ class MusicPlayer:
         if not self.playlist:
             return
         
-        # Загружаем и играем текущий файл
         track_path = os.path.join(self.folder, self.playlist[self.current_index])
         pygame.mixer.music.load(track_path)
         pygame.mixer.music.play()
