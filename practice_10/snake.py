@@ -41,7 +41,9 @@ def draw_walls(surface):
 def cell_rect(col, row):
     return pygame.Rect(col * CELL, row * CELL, CELL, CELL)
 
-def random_food_position(snake_body):
+def random_food_position(snake)
+                         
+                         e_body):
     while True:
         col = random.randint(1, COLS - 2)
         row = random.randint(1, ROWS - 2)
