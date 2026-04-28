@@ -1,18 +1,10 @@
-"""
-main.py — Entry point for TSIS 3 Racer.
-Wires together: MainMenu → UsernameScreen → RacerGame → GameOverScreen
-                LeaderboardScreen, SettingsScreen
-"""
-
 import sys
 import pygame
-
 from persistence import load_settings, save_score
 from ui          import MainMenu, UsernameScreen, LeaderboardScreen, SettingsScreen, GameOverScreen
 from racer       import RacerGame
 
 SCREEN_W, SCREEN_H = 900, 700
-
 
 def main():
     pygame.init()
@@ -32,7 +24,6 @@ def main():
     state = "menu"
 
     while True:
-
         if state == "menu":
             action = main_menu.run(screen, clock)
             if   action == "play":        state = "username"
@@ -66,12 +57,11 @@ def main():
             state = "menu"
 
         elif state == "settings":
-            settings = settings_sc.run(screen, clock, settings)
+            settings = settings_sc.run(screen, clock)
             state = "menu"
 
     pygame.quit()
     sys.exit()
-
 
 if __name__ == "__main__":
     main()

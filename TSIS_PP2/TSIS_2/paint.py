@@ -1,14 +1,3 @@
-"""
-paint.py — Paint Application (TSIS 2)
-Controls:
-  Tools      : P pencil | L line | R rect | C circle | E eraser
-               F fill   | T text | S square | G right-triangle
-               Q equilateral-triangle | H rhombus
-  Brush size : 1 small(2px)  2 medium(5px)  3 large(10px)
-  Save       : Ctrl+S  → saves canvas as timestamped .png
-  Color pick : click a swatch in the palette
-"""
-
 import sys
 import datetime
 import pygame
@@ -19,9 +8,6 @@ from tools import (
     EquilateralTriangleTool, RhombusTool,
 )
 
-# ─────────────────────────────────────────────
-#  Constants
-# ─────────────────────────────────────────────
 SCREEN_W, SCREEN_H = 1200, 750
 TOOLBAR_H = 64
 CANVAS_TOP = TOOLBAR_H
@@ -35,7 +21,7 @@ TEXT_COLOR    = (220, 220, 230)
 HOVER_COLOR   = (55, 55, 65)
 ACTIVE_COLOR  = (70, 110, 200)
 
-BRUSH_SIZES = {1: 2, 2: 5, 3: 10}   # key → px
+BRUSH_SIZES = {1: 2, 2: 5, 3: 10}
 
 PALETTE = [
     (0,   0,   0),   (80,  80,  80), (160, 160, 160), (255, 255, 255),
@@ -72,17 +58,9 @@ KEY_MAP = {
     pygame.K_t: "Text",
 }
 
-
-# ─────────────────────────────────────────────
-#  Helper: draw a rounded rect
-# ─────────────────────────────────────────────
 def draw_rounded_rect(surface, color, rect, radius=8):
     pygame.draw.rect(surface, color, rect, border_radius=radius)
 
-
-# ─────────────────────────────────────────────
-#  Toolbar
-# ─────────────────────────────────────────────
 class Toolbar:
     BTN_W, BTN_H = 62, 44
     BTN_GAP = 4
@@ -94,31 +72,27 @@ class Toolbar:
         self._build_layout()
 
     def _build_layout(self):
-        """Pre-calculate button rects."""
-        self.tool_rects = {}          # name → Rect
-        self.size_rects = {}          # 1/2/3 → Rect
-        self.palette_rects = {}       # color → Rect
+        self.tool_rects = {}
+        self.size_rects = {}
+        self.palette_rects = {}
 
         x = self.SIDE_PAD
         cy = TOOLBAR_H // 2
 
-        # Tool buttons
         for shortcut, name, _tool in TOOL_DEFS:
             rect = pygame.Rect(x, cy - self.BTN_H // 2, self.BTN_W, self.BTN_H)
             self.tool_rects[name] = (rect, shortcut)
             x += self.BTN_W + self.BTN_GAP
 
-        x += 12  # separator gap
+        x += 12
 
-        # Brush size buttons
         for k in (1, 2, 3):
             rect = pygame.Rect(x, cy - 18, 36, 36)
             self.size_rects[k] = rect
             x += 40
 
-        x += 12  # separator gap
+        x += 12
 
-        # Palette swatches
         sw = 26
         gap = 3
         per_row = 8
@@ -130,11 +104,9 @@ class Toolbar:
             self.palette_rects[color] = pygame.Rect(rx, ry, sw, sw)
 
     def draw(self, surface, active_tool_name, active_size, active_color):
-        # Background
         pygame.draw.rect(surface, TOOLBAR_COLOR, (0, 0, SCREEN_W, TOOLBAR_H))
         pygame.draw.line(surface, (50, 50, 60), (0, TOOLBAR_H - 1), (SCREEN_W, TOOLBAR_H - 1))
 
-        # Tool buttons
         for name, (rect, shortcut) in self.tool_rects.items():
             color = ACTIVE_COLOR if name == active_tool_name else HOVER_COLOR
             draw_rounded_rect(surface, color, rect, 6)
@@ -143,14 +115,12 @@ class Toolbar:
             surface.blit(label, label.get_rect(centerx=rect.centerx, centery=rect.centery + 4))
             surface.blit(key_lbl, key_lbl.get_rect(centerx=rect.centerx, centery=rect.centery - 10))
 
-        # Size buttons
         dot_sizes = {1: 3, 2: 6, 3: 10}
         for k, rect in self.size_rects.items():
             color = ACTIVE_COLOR if k == active_size else HOVER_COLOR
             draw_rounded_rect(surface, color, rect, 6)
             pygame.draw.circle(surface, TEXT_COLOR, rect.center, dot_sizes[k])
 
-        # Palette
         for color, rect in self.palette_rects.items():
             draw_rounded_rect(surface, color, rect, 4)
             if color == active_color:
@@ -174,10 +144,6 @@ class Toolbar:
                 return color
         return None
 
-
-# ─────────────────────────────────────────────
-#  Status bar
-# ─────────────────────────────────────────────
 def draw_status(surface, font, tool_name, size_px, color, mouse_pos, message=""):
     bar_y = SCREEN_H - 22
     pygame.draw.rect(surface, TOOLBAR_COLOR, (0, bar_y, SCREEN_W, 22))
@@ -187,38 +153,29 @@ def draw_status(surface, font, tool_name, size_px, color, mouse_pos, message="")
         info += f"   {message}"
     txt = font.render(info, True, (140, 140, 155))
     surface.blit(txt, (6, bar_y + 4))
-    # Color preview
     pygame.draw.rect(surface, color, (SCREEN_W - 40, bar_y + 3, 16, 16), border_radius=3)
 
-
-# ─────────────────────────────────────────────
-#  Main
-# ─────────────────────────────────────────────
 def main():
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
     pygame.display.set_caption("Paint — TSIS 2")
     clock = pygame.time.Clock()
 
-    # Fonts
     font_ui     = pygame.font.SysFont("segoeui",    11, bold=True)
     font_key    = pygame.font.SysFont("consolas",   11, bold=True)
     font_status = pygame.font.SysFont("consolas",   12)
 
-    # Canvas surface (persistent drawing target)
     canvas = pygame.Surface((SCREEN_W, CANVAS_H))
     canvas.fill(CANVAS_BG)
 
-    # Preview overlay (drawn on top each frame, not blit to canvas until confirmed)
     preview = pygame.Surface((SCREEN_W, CANVAS_H), pygame.SRCALPHA)
 
     toolbar = Toolbar(font_ui, font_key)
 
-    # State
     tool_map   = {name: tool for _, name, tool in TOOL_DEFS}
     active_name = "Pencil"
     active_tool = tool_map[active_name]
-    active_size = 2           # key 1/2/3
+    active_size = 2
     active_color = (0, 0, 0)
     drawing = False
     status_msg = ""
@@ -247,7 +204,6 @@ def main():
         pygame.image.save(canvas, filename)
         show_msg(f"Saved: {filename}")
 
-    # ── event loop ────────────────────────────
     running = True
     while running:
         size_px = BRUSH_SIZES[active_size]
@@ -256,11 +212,9 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-            # ── keyboard ──────────────────────
             elif event.type == pygame.KEYDOWN:
                 text_tool = tool_map["Text"]
                 if isinstance(active_tool, type(text_tool)) and text_tool.is_active:
-                    # Delegate all keys to text tool
                     text_tool.handle_key(event, canvas, active_color, active_size)
                 else:
                     mods = pygame.key.get_mods()
@@ -271,11 +225,9 @@ def main():
                     elif event.key in KEY_MAP:
                         set_tool(KEY_MAP[event.key])
 
-            # ── mouse down ────────────────────
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 pos = event.pos
                 if pos[1] < CANVAS_TOP:
-                    # Toolbar click
                     hit_t = toolbar.hit_tool(pos)
                     hit_s = toolbar.hit_size(pos)
                     hit_c = toolbar.hit_color(pos)
@@ -289,32 +241,24 @@ def main():
                     drawing = True
                     active_tool.on_mouse_down(canvas, canvas_pos(pos), active_color, size_px)
 
-            # ── mouse drag ────────────────────
             elif event.type == pygame.MOUSEMOTION:
                 if drawing and in_canvas(event.pos):
                     active_tool.on_mouse_drag(canvas, canvas_pos(event.pos), active_color, size_px)
 
-            # ── mouse up ──────────────────────
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 if drawing and in_canvas(event.pos):
                     active_tool.on_mouse_up(canvas, canvas_pos(event.pos), active_color, size_px)
                 drawing = False
 
-        # ── draw frame ────────────────────────
         screen.fill(BG_COLOR)
-
-        # Canvas
         screen.blit(canvas, (0, CANVAS_TOP))
 
-        # Preview overlay
         preview.fill((0, 0, 0, 0))
         active_tool.draw_preview(preview, active_color, size_px)
         screen.blit(preview, (0, CANVAS_TOP))
 
-        # Toolbar
         toolbar.draw(screen, active_name, active_size, active_color)
 
-        # Status bar
         if status_timer > 0:
             status_timer -= 1
             if status_timer == 0:
@@ -327,7 +271,6 @@ def main():
 
     pygame.quit()
     sys.exit()
-
 
 if __name__ == "__main__":
     main()
